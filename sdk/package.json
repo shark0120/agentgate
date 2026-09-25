@@ -1,0 +1,17 @@
+{
+  "name": "@agentgate/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Scope trees, proposals, EIP-712 attestations and a reference attestor for AgentGate.",
+  "scripts": {
+    "test": "tsx --test test/sdk.test.ts"
+  },
+  "dependencies": {
+    "ethers": "^6.15.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

@@ -63,13 +63,16 @@ contract AgentGate is GateBase {
             revert Terminal();
         }
         if (keccak256(abi.encode(p)) != c.paramsHash) revert A4_PreimageMismatch();
-        if (c.rootDelegatee == address(0) || c.rootDelegatee == c.principalAccount || c.expiry <= c.activateAfter) {
+        if (
+            c.rootDelegatee == address(0) || c.rootDelegatee == c.principalAccount || c.adapter == address(0)
+                || c.expiry <= c.activateAfter
+        ) {
             revert InvalidCommit();
         }
         if (p.attestThreshold == 0 || p.maxStateAge == 0 || p.maxStateAge > 256) revert InvalidParams();
         uint256 delay = p.activationDelay > s.activationDelay ? p.activationDelay : s.activationDelay;
         if (c.activateAfter < block.timestamp + delay) revert DelayTooShort();
-        if (!_accountOk(c.principalAccount, c.accountConfigDigest, c.rootDelegatee)) revert A15_AccountConfig();
+        if (!_accountOk(c.principalAccount, c.adapter, c.accountConfigDigest, c.rootDelegatee)) revert A15_AccountConfig();
 
         bytes32 ch = keccak256(abi.encode(c));
         address[] memory forbidden = new address[](1);
@@ -114,7 +117,7 @@ contract AgentGate is GateBase {
         if (keccak256(abi.encode(p)) != c.paramsHash || keccak256(abi.encode(b)) != c.budgetHash) {
             revert A4_PreimageMismatch();
         }
-        if (!_accountOk(c.principalAccount, c.accountConfigDigest, c.rootDelegatee)) revert A15_AccountConfig();
+        if (!_accountOk(c.principalAccount, c.adapter, c.accountConfigDigest, c.rootDelegatee)) revert A15_AccountConfig();
 
         s.commitHash = ch;
         s.pendingCommitHash = 0;
@@ -178,7 +181,7 @@ contract AgentGate is GateBase {
         if (keccak256(abi.encode(c)) != s.commitHash) revert A4_PreimageMismatch();
         bool broken;
         if (code == TRIP_ACCOUNT_CONFIG) {
-            broken = !_accountOk(c.principalAccount, c.accountConfigDigest, c.rootDelegatee);
+            broken = !_accountOk(c.principalAccount, c.adapter, c.accountConfigDigest, c.rootDelegatee);
         } else if (code == TRIP_CODE_DRIFT) {
             bytes32 member = keccak256(bytes.concat(keccak256(abi.encode(leaf))));
             if (!MerkleProof.verifyCalldata(scopeProof, c.scopeRoot, member)) revert A3_OutOfScope();
@@ -212,7 +215,7 @@ contract AgentGate is GateBase {
         GateChecks.checkLeafAndCalldata(a.leaf, p, a.data, a.commit.principalAccount);
         // A6, A15
         if (!SignatureChecker.isValidSignatureNow(agent, ph, a.agentSig)) revert A6_BadAgentSig();
-        if (!_accountOk(a.commit.principalAccount, a.commit.accountConfigDigest, agent)) revert A15_AccountConfig();
+        if (!_accountOk(a.commit.principalAccount, a.commit.adapter, a.commit.accountConfigDigest, agent)) revert A15_AccountConfig();
         // A7, A8
         _useNonce(p.mandateId, p.nonce);
         _checkValidity(p, a.params.maxStateAge);

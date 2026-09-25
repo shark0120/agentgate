@@ -61,6 +61,10 @@ contract MockAccount is IAccountAdapter {
         return otherAuthority[agent];
     }
 
+    function account() external view returns (address) {
+        return address(this);
+    }
+
     function isValidSignature(bytes32 hash, bytes calldata sig) external view returns (bytes4) {
         (address signer, ECDSA.RecoverError err,) = ECDSA.tryRecover(hash, sig);
         return err == ECDSA.RecoverError.NoError && signer == owner ? bytes4(0x1626ba7e) : bytes4(0xffffffff);

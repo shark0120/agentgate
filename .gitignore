@@ -6,3 +6,8 @@ grants/
 .env.*
 *.log
 .DS_Store
+safe-build/**/out/
+safe-build/**/cache/
+node_modules/
+lib/safe-v1.4.1/
+lib/safe-v1.5.0/

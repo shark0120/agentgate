@@ -16,11 +16,14 @@ interface IAccountAdapter {
     /// @dev Must only accept calls from the installed gate and perform exactly one CALL.
     function executeFromGate(address target, uint256 value, bytes calldata data) external returns (bytes memory);
 
-    /// @dev Digest of the account's module set and signer set.
+    /// @dev Digest of the account's owners, threshold, modules, guard, fallback handler, and module guard.
     function configDigest() external view returns (bytes32);
 
     /// @dev True if `agent` can act on the account through any path other than the gate.
     function agentAuthority(address agent) external view returns (bool);
+
+    /// @dev Account whose funds this adapter moves. The gate rejects a commit that names a different principal.
+    function account() external view returns (address);
 }
 
 /// @notice Sequencer liveness feed (T1).

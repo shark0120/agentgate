@@ -1,0 +1,7 @@
+{
+  "kind": "vendor-payment",
+  "text": "Pay only the listed vendors, and never more than the cap, from the treasury USDC.",
+  "token": "0x0000000000000000000000000000000000000001",
+  "recipients": ["0x00000000000000000000000000000000000000aa"],
+  "maxAmount": "1000000000000000000"
+}

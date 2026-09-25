@@ -2,7 +2,9 @@
 
 Attestation-gated execution for AI agents. An agent's signature is a proposal, not a command. Funds stay in the account. Settlement happens only when six conditions hold at once.
 
-**Not audited. Not deployed. Do not use with real funds.** Tests run against `MockAccount`, not a Safe. Safe integration is the next milestone.
+**Not audited. Not deployed to a public network. Do not use with real funds.**
+
+Safe integration is in `src/SafeAgentGateAdapter.sol`. Tests deploy Safe v1.4.1 and v1.5.0 creation bytecode built from the tagged source. The older suite still uses `MockAccount`. There is no external audit and no public testnet deployment.
 
 ## The six conditions
 
@@ -19,10 +21,11 @@ The worst case the protocol aims to bound is the budget that can be reserved ins
 
 Verified locally on 2026-09-26 with Foundry 1.8.3, solc 0.8.30, OpenZeppelin Contracts 5.7.0, `via_ir`, Cancun:
 
-- 103 tests passed, 0 failed (102 unit tests and 1 invariant test).
+- 141 tests passed, 0 failed, on 2026-09-26 with Foundry 1.8.3. That includes the previous MockAccount suite, Safe v1.4.1, Safe v1.5.0, and one invariant test.
 - Invariant run: 128 runs, depth 128, 16,384 calls, 0 reverts, on one mandate with no epoch change.
 - Properties checked: capability-tree budget conservation; measured USDC outflow equals recorded consumption; one fixture where a recipient is inside a child scope but outside the root scope, and is never paid. That fixture is not a general proof about every out-of-scope recipient.
-- Runtime size: AgentGate 21,204 bytes; GateSettlement 12,186 bytes; GateChecks 4,767 bytes.
+- Safe tests show that `enableModule`, `addOwnerWithThreshold`, and `setGuard` each block execution and make `trip` succeed. v1.5.0 also covers `setModuleGuard`. Principal co-sign goes through Safe ERC-1271. A raw signature of the gate hash does not.
+- Runtime size from one happy-path gas report: AgentGate 22,933 bytes; GateSettlement 12,989 bytes. See `docs/GAS.md`.
 
 The gate has no owner, no upgrade path, and no global switch. `GateSettlement` is reached by `DELEGATECALL` through an extension address fixed at construction. Calling the extension directly is rejected.
 
@@ -45,7 +48,11 @@ Dependencies are vendored under `lib/` (forge-std and OpenZeppelin Contracts 5.7
 | `src/libraries/GateChecks.sol` | Stateless leaf, delegation, and shrink checks. Runtime 4,767 bytes. |
 | `src/verifiers/EcdsaAttestationVerifier.sol` | ECDSA / ERC-1271 attestations. |
 | `SPEC.md` | Merged specification. |
+| `src/SafeAgentGateAdapter.sol` | Safe module. One CALL. DELEGATECALL refused. |
 | `test/f1` | Reject-path and invariant tests. |
+| `test/safe` | Safe v1.4.1 and v1.5.0. |
+| `sdk/` | TypeScript scope trees, attestations, two policies, reference attestor. |
+| `docs/` | Threat model, audit pack, gas notes. |
 | `archive/s0` | Previous custodial prototype. Not compiled. |
 
 ## Specification
@@ -70,7 +77,7 @@ The protocol backbone is attributed to @川, 2026-09-25. See SPEC.md §0.
 forge test
 ```
 
-目前接的是 `MockAccount`，不是 Safe。還沒審計，不能拿去管真的資金。規格見 [SPEC.md](SPEC.md)。前一版 S0 封存在 [archive/s0](archive/s0/README.md)，不參與編譯。
+Safe 接線在 `src/SafeAgentGateAdapter.sol`，測試打的是 v1.4.1 和 v1.5.0 的官方原始碼。還沒審計，也還沒部署到公開測試網，不能拿去管真的資金。規格見 [SPEC.md](SPEC.md)。威脅模型見 [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md)。
 
 ## License
 

@@ -52,7 +52,9 @@ contract GateSettlement is GateBase {
             if (nodeEpoch[p.capPath[i]] != 0) revert X4_StaleTicket();
         }
         _checkWindow(t);
-        if (!_accountOk(x.commit.principalAccount, x.commit.accountConfigDigest, t.agent)) revert X6_AccountConfig();
+        if (!_accountOk(x.commit.principalAccount, x.commit.adapter, x.commit.accountConfigDigest, t.agent)) {
+            revert X6_AccountConfig();
+        }
 
         delete ticketLive[th];
         if (t.leafType == LEAF_DELEGATE) {
@@ -198,7 +200,7 @@ contract GateSettlement is GateBase {
         address[] memory spenders = _checkedSpenders(l, x.data);
         uint256[] memory preAllow = _allowances(l.assets, account, spenders);
 
-        IAccountAdapter(account).executeFromGate(l.target, x.proposal.value, x.data);
+        IAccountAdapter(x.commit.adapter).executeFromGate(l.target, x.proposal.value, x.data);
 
         outs = new uint256[](k);
         ins = new uint256[](k);

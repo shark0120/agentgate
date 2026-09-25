@@ -345,6 +345,7 @@ A 的形式承諾在融合版的意義：
 | TicketPreimage | 移除 pathEpochsDigest | 節點有效等於節點世代為 0，由 capPath 即可重驗 |
 | ArgRule.op | EQ、LTE、GTE、EQ_ACCOUNT | 白名單改用多片葉表達；EQ_ACCOUNT 把收款人綁定到帳戶本身 |
 | Params | 移除 aggregateCap、oracle（留給 F3） | F1 不做跨資產估值 |
+| MandateCommit | adapter | 閘門呼叫的帳戶模組。資產仍在 principalAccount。adapter.account() 必須等於 principalAccount |
 
 ## 13. 與既有棧的語意差異
 

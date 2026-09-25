@@ -1,0 +1,9 @@
+{
+  "kind": "dex-rebalance",
+  "text": "Rebalance USDC to WETH only if the declared minimum inflow meets the floor.",
+  "router": "0x0000000000000000000000000000000000000002",
+  "tokenIn": "0x0000000000000000000000000000000000000003",
+  "tokenOut": "0x0000000000000000000000000000000000000004",
+  "maxAmountIn": "1000000000000000000",
+  "minOut": "1000"
+}

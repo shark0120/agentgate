@@ -42,6 +42,7 @@ struct MandateCommit {
     bytes32 accountConfigDigest;
     uint64 expiry;
     uint64 activateAfter;
+    address adapter; // module the gate calls; equals principalAccount on the mock
 }
 
 struct Params {

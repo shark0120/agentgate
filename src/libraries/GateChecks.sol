@@ -92,9 +92,10 @@ library GateChecks {
     function _requireCommitShrink(MandateCommit calldata o, MandateCommit calldata n) private view {
         if (
             n.mandateId != o.mandateId || n.principalAccount != o.principalAccount || n.rootDelegatee != o.rootDelegatee
-                || n.scopeRoot != o.scopeRoot || n.policyHash != o.policyHash || n.attestorSetRoot != o.attestorSetRoot
-                || n.guardianSetRoot != o.guardianSetRoot || n.accountConfigDigest != o.accountConfigDigest
-                || n.activateAfter != o.activateAfter || n.expiry > o.expiry || n.expiry <= block.timestamp
+                || n.adapter != o.adapter || n.scopeRoot != o.scopeRoot || n.policyHash != o.policyHash
+                || n.attestorSetRoot != o.attestorSetRoot || n.guardianSetRoot != o.guardianSetRoot
+                || n.accountConfigDigest != o.accountConfigDigest || n.activateAfter != o.activateAfter
+                || n.expiry > o.expiry || n.expiry <= block.timestamp
         ) revert NotShrink();
     }
 

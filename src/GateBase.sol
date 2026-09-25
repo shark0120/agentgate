@@ -62,14 +62,20 @@ abstract contract GateBase is EIP712, ReentrancyGuardTransient {
         return _hashTypedDataV4(keccak256(abi.encode(PROPOSAL_TAG, keccak256(abi.encode(p)))));
     }
 
-    function _accountOk(address account, bytes32 digest, address agent) internal view returns (bool) {
-        if (account.code.length == 0) return false;
-        try IAccountAdapter(account).configDigest() returns (bytes32 d) {
+    /// @dev Fail closed. `adapter` is the module the gate calls; it must be bound to `principal`.
+    function _accountOk(address principal, address adapter, bytes32 digest, address agent) internal view returns (bool) {
+        if (adapter == address(0) || adapter.code.length == 0) return false;
+        try IAccountAdapter(adapter).account() returns (address bound) {
+            if (bound != principal) return false;
+        } catch {
+            return false;
+        }
+        try IAccountAdapter(adapter).configDigest() returns (bytes32 d) {
             if (d != digest) return false;
         } catch {
             return false;
         }
-        try IAccountAdapter(account).agentAuthority(agent) returns (bool other) {
+        try IAccountAdapter(adapter).agentAuthority(agent) returns (bool other) {
             return !other;
         } catch {
             return false;

@@ -66,6 +66,11 @@ abstract contract F1Base is Test {
     uint256 internal nonceCounter;
 
     function setUp() public virtual {
+        _initFixture();
+        _proposeAndActivate();
+    }
+
+    function _initFixture() internal {
         vm.warp(1_800_000_000);
         vm.roll(1_000);
         owner = vm.addr(ownerPk);
@@ -98,8 +103,6 @@ abstract contract F1Base is Test {
         vm.deal(address(account), 10 ether);
         vm.prank(owner);
         account.execute(address(usdc), 0, abi.encodeCall(IERC20.approve, (address(router), type(uint256).max)));
-
-        _proposeAndActivate();
     }
 
     // ═══════════════════════════ fixture builders ═══════════════════════════
@@ -223,7 +226,8 @@ abstract contract F1Base is Test {
         returns (MandateCommit memory c)
     {
         c.mandateId = MANDATE;
-        c.principalAccount = address(account);
+        c.principalAccount = _principal();
+        c.adapter = _adapterAddr();
         c.rootDelegatee = agent;
         c.scopeRoot = MerkleHelper.rootOf(_scopeLeaves(_rootSet()));
         c.policyHash = POLICY;
@@ -231,7 +235,7 @@ abstract contract F1Base is Test {
         c.guardianSetRoot = MerkleHelper.root(_one(guardian));
         c.paramsHash = keccak256(abi.encode(p));
         c.budgetHash = keccak256(abi.encode(b));
-        c.accountConfigDigest = account.configDigest();
+        c.accountConfigDigest = _configDigest();
         c.expiry = exp;
         c.activateAfter = activateAfter;
     }
@@ -436,7 +440,19 @@ abstract contract F1Base is Test {
         (outs,) = settle.execute(_exec(a, t));
     }
 
-    function _asPrincipal(bytes memory call) internal {
+    function _principal() internal view virtual returns (address) {
+        return address(account);
+    }
+
+    function _adapterAddr() internal view virtual returns (address) {
+        return address(account);
+    }
+
+    function _configDigest() internal view virtual returns (bytes32) {
+        return account.configDigest();
+    }
+
+    function _asPrincipal(bytes memory call) internal virtual {
         vm.prank(owner);
         account.execute(address(gate), 0, call);
     }
