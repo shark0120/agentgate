@@ -1,0 +1,8 @@
+cache/
+out/
+broadcast/
+grants/
+.env
+.env.*
+*.log
+.DS_Store
