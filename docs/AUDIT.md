@@ -48,9 +48,9 @@ forge test
 
 ## Known issues
 
-1. Adapter honesty. The gate trusts `account`, `configDigest`, and `agentAuthority`. A malicious
+1. Adapter honesty. The gate trusts one `accountSnapshot` call for the account, the digest, and other authority. A malicious
    adapter can report a calm digest and move funds elsewhere. The Safe adapter is the one the tests
-   cover.
+   cover. Its snapshot is checked against `account`, `configDigest`, and `agentAuthority`.
 2. Owner path. Safe owners can transfer funds without the gate. T7 does not bind the owners.
 3. Allowance enumeration. Only the call target, and the spender argument of `approve` /
    `increaseAllowance`, are checked. Other spenders are T6.

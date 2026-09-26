@@ -25,7 +25,7 @@ job. The owner of a Safe can always act outside the gate. T7 is about the agent 
 | T4 | Attestors answer | Nothing settles | Admission reverts. The principal still acts through the account directly |
 | T5 | The agent key is not stolen | Someone else can propose | A stolen key still needs scope, budget, attestations, the window, and measured settlement |
 | T6 | The target behaves like the leaf says | Measurement can miss an effect | Code-hash drift is X5. Anyone can `trip` on it. Allowance checks cover the call target and `approve` / `increaseAllowance` spenders only |
-| T7 | The gate is the agent key's only path | The budget is not a loss bound | Commit and execute read `configDigest` and `agentAuthority`. A digest mismatch is A15 or X6. Anyone can `trip` |
+| T7 | The gate is the agent key's only path | The budget is not a loss bound | Commit and execute read account, digest, and other authority through one `accountSnapshot` call. A mismatch is A15 or X6. Anyone can `trip` |
 | T8 | An oracle is honest | A cross-asset cap could be wrong | Not used. F1 has no oracle and no aggregate cap |
 | T9 | Attestors have the policy text that matches `policyHash` | They cannot review | They do not sign. Admission fails closed |
 | T10 | Time moves forward | Windows and expiry are meaningless | F1 uses `block.timestamp` only |
@@ -38,8 +38,7 @@ the fallback-handler slot, and the module-guard slot. v1.4.1 has no module guard
 The list is paginated. If it cannot be read in full, the adapter reverts. A truncated list would hide
 a module, so truncation is a failure, not a success.
 
-`agentAuthority(agent)` is true when that address is an owner or an enabled module. The gate then
-refuses the commit. The adapter itself is a module. It must not be the agent.
+`accountSnapshot(agent)` returns the bound account, that digest, and whether the agent is an owner or an enabled module. The gate refuses the commit when any of the three disagree with the commit. `agentAuthority` stays as a separate read of Safe's `isOwner` and `isModuleEnabled`, so the snapshot can be checked against it. The adapter itself is a module. It must not be the agent.
 
 ## Loss bound
 

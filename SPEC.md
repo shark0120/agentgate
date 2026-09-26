@@ -332,7 +332,7 @@ A 的形式承諾在融合版的意義：
 | configDigest、agentAuthority（外部，帳戶） | 閘門 | — / agent | 設定摘要；該金鑰在閘門以外有沒有權限 |
 | isUp、lastChangeAt（外部，存活來源） | 閘門 | — | 排序器狀態與最後切換時間 |
 
-實作註記：execute、veto、withdrawAttestation、cancel、release、revokeCap、reclaim 放在延伸合約 GateSettlement。AgentGate 經 fallback 以 DELEGATECALL 轉發原始 calldata，兩者共用同一個儲存佈局（GateBase）。延伸合約位址在建構時固定，不構成升級路徑；直接呼叫延伸合約會被拒絕。拆分的唯一理由是 EIP-170 的 24KB 上限。
+實作註記：execute、veto、withdrawAttestation、cancel、release、revokeCap、reclaim 放在延伸合約 GateSettlement。AgentGate 經 fallback 以 DELEGATECALL 轉發原始 calldata，兩者共用同一個儲存佈局（GateBase）。延伸合約位址在建構時固定，不構成升級路徑；直接呼叫延伸合約會被拒絕。拆分的唯一理由是 EIP-170 的 24KB 上限。 閘門不把 `account()`、`configDigest()`、`agentAuthority()` 分成三次外部呼叫，而是呼叫一次 `accountSnapshot(agent)`。三個函式仍要實作，而且快照必須和它們一致。讀取失敗視為檢查失敗。
 
 ### 12.2 相對 B 的欄位增補
 

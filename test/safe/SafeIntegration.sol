@@ -325,6 +325,45 @@ abstract contract SafeIntegrationTest is F1Base {
         );
         assertTrue(adapter.configDigest() != before);
         assertEq(adapter.moduleList().length, 10);
+        _assertSnapshot(address(uint160(0xA000)), true);
+        _assertModuleListMatchesSafe();
+    }
+
+    function test_accountSnapshotMatchesTheThreeReads() public {
+        _assertSnapshot(agent, false);
+        _assertSnapshot(owner, true);
+        _assertSnapshot(address(adapter), true);
+        _assertSnapshot(address(0), false);
+        _assertSnapshot(address(0x1), false);
+        _assertModuleListMatchesSafe();
+        _safeExec(safe, 0, abi.encodeWithSignature("addOwnerWithThreshold(address,uint256)", agent, 1));
+        _assertSnapshot(agent, true);
+    }
+
+    function _assertSnapshot(address who, bool other) internal view {
+        (address bound, bytes32 digest, bool got) = adapter.accountSnapshot(who);
+        assertEq(bound, safe);
+        assertEq(bound, adapter.account());
+        assertEq(digest, adapter.configDigest());
+        assertEq(got, other);
+        assertEq(got, adapter.agentAuthority(who));
+    }
+
+    function _assertModuleListMatchesSafe() internal view {
+        address[] memory got = adapter.moduleList();
+        address start = address(0x1);
+        uint256 n;
+        for (uint256 page; page < 40; ++page) {
+            (address[] memory batch, address next) = ISafePages(safe).getModulesPaginated(start, 8);
+            for (uint256 i; i < batch.length; ++i) {
+                assertLt(n, got.length);
+                assertEq(got[n], batch[i]);
+                ++n;
+            }
+            if (next == address(0x1) || next == address(0)) break;
+            start = next;
+        }
+        assertEq(n, got.length);
     }
 
     function test_thresholdChangeChangesDigest() public {
@@ -333,4 +372,11 @@ abstract contract SafeIntegrationTest is F1Base {
         _safeExec(safe, 0, abi.encodeWithSignature("changeThreshold(uint256)", 2));
         assertTrue(adapter.configDigest() != before);
     }
+}
+
+interface ISafePages {
+    function getModulesPaginated(address start, uint256 pageSize)
+        external
+        view
+        returns (address[] memory array, address next);
 }

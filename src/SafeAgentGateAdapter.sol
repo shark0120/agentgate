@@ -11,6 +11,7 @@ import {IAccountAdapter} from "./interfaces/IGateExternal.sol";
 contract SafeAgentGateAdapter is IAccountAdapter {
     uint8 internal constant OP_CALL = 0;
     address internal constant SENTINEL = address(0x1);
+    uint256 internal constant FIRST_PAGE = 1;
     uint256 internal constant PAGE = 8;
     uint256 internal constant MAX_MODULES = 256;
 
@@ -56,13 +57,17 @@ contract SafeAgentGateAdapter is IAccountAdapter {
         revert DelegateCallRefused();
     }
 
-    function configDigest() public view returns (bytes32) {
-        ISafeModule s = ISafeModule(safe);
-        return keccak256(
-            abi.encode(s.getOwners(), s.getThreshold(), moduleList(), _slot(GUARD_SLOT), _slot(FALLBACK_SLOT), _slot(MODULE_GUARD_SLOT))
-        );
+    function configDigest() public view returns (bytes32 digest) {
+        (digest,) = _read(address(0));
     }
 
+    /// @notice Bound account, config digest, and whether `agent` has another path. One Safe walk.
+    function accountSnapshot(address agent) external view returns (address bound, bytes32 digest, bool otherAuthority) {
+        bound = safe;
+        (digest, otherAuthority) = _read(agent);
+    }
+
+    /// @dev Independent of `_read`. Tests compare this with the snapshot so the two cannot silently diverge.
     function agentAuthority(address agent) external view returns (bool) {
         if (agent == address(0) || agent == SENTINEL) return false;
         ISafeModule s = ISafeModule(safe);
@@ -70,16 +75,24 @@ contract SafeAgentGateAdapter is IAccountAdapter {
     }
 
     /// @notice Every enabled module, or a revert. A partial list would hide a path from the digest.
+    /// @dev The first page asks for one module. A one-module Safe is the common case and should not
+    ///      allocate a 256-word buffer. Later pages are 8. A page that would pass the cap reverts
+    ///      instead of being truncated.
     function moduleList() public view returns (address[] memory all) {
-        address[] memory buf = new address[](MAX_MODULES);
+        address[] memory buf = new address[](FIRST_PAGE);
         uint256 n;
         address start = SENTINEL;
-        for (uint256 page; page < MAX_MODULES / PAGE; ++page) {
-            (address[] memory batch, address next) = ISafeModule(safe).getModulesPaginated(start, PAGE);
-            for (uint256 i; i < batch.length; ++i) {
-                if (n == MAX_MODULES) revert ModuleListTooLong();
-                buf[n++] = batch[i];
+        uint256 pageSize = FIRST_PAGE;
+        for (uint256 page; page < MAX_MODULES; ++page) {
+            (address[] memory batch, address next) = ISafeModule(safe).getModulesPaginated(start, pageSize);
+            uint256 add = batch.length;
+            if (add > MAX_MODULES || n > MAX_MODULES - add) revert ModuleListTooLong();
+            if (n + add > buf.length) {
+                address[] memory grown = new address[](n + add);
+                for (uint256 i; i < n; ++i) grown[i] = buf[i];
+                buf = grown;
             }
+            for (uint256 i; i < add; ++i) buf[n++] = batch[i];
             if (next == SENTINEL || next == address(0)) {
                 assembly ("memory-safe") {
                     mstore(buf, n)
@@ -88,8 +101,29 @@ contract SafeAgentGateAdapter is IAccountAdapter {
             }
             if (next == start) revert ModuleListTooLong();
             start = next;
+            pageSize = PAGE;
         }
         revert ModuleListTooLong();
+    }
+
+    /// @dev Digest encoding is unchanged. Authority is derived from the lists just read, so the hot
+    ///      path does not also call `isOwner` and `isModuleEnabled`.
+    function _read(address agent) internal view returns (bytes32 digest, bool other) {
+        ISafeModule s = ISafeModule(safe);
+        address[] memory owners = s.getOwners();
+        address[] memory modules = moduleList();
+        digest = keccak256(
+            abi.encode(owners, s.getThreshold(), modules, _slot(GUARD_SLOT), _slot(FALLBACK_SLOT), _slot(MODULE_GUARD_SLOT))
+        );
+        if (agent == address(0) || agent == SENTINEL) return (digest, false);
+        other = _listed(owners, agent) || _listed(modules, agent);
+    }
+
+    function _listed(address[] memory xs, address x) internal pure returns (bool) {
+        for (uint256 i; i < xs.length; ++i) {
+            if (xs[i] == x) return true;
+        }
+        return false;
     }
 
     function _slot(bytes32 slot) internal view returns (address a) {

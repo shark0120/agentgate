@@ -16,6 +16,13 @@ interface IAccountAdapter {
     /// @dev Must only accept calls from the installed gate and perform exactly one CALL.
     function executeFromGate(address target, uint256 value, bytes calldata data) external returns (bytes memory);
 
+    /// @dev One read of the three facts below. The gate calls this, not the three functions.
+    ///      A revert is a failed check. The three functions stay so a reviewer can compare them.
+    function accountSnapshot(address agent)
+        external
+        view
+        returns (address account, bytes32 digest, bool otherAuthority);
+
     /// @dev Digest of the account's owners, threshold, modules, guard, fallback handler, and module guard.
     function configDigest() external view returns (bytes32);
 

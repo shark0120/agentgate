@@ -21,11 +21,11 @@ The worst case the protocol aims to bound is the budget that can be reserved ins
 
 Verified locally on 2026-09-26 with Foundry 1.8.3, solc 0.8.30, OpenZeppelin Contracts 5.7.0, `via_ir`, Cancun:
 
-- 141 tests passed, 0 failed, on 2026-09-26 with Foundry 1.8.3. That includes the previous MockAccount suite, Safe v1.4.1, Safe v1.5.0, and one invariant test.
+- 146 tests passed, 0 failed, on 2026-09-26 with Foundry 1.8.3. That includes the previous MockAccount suite, Safe v1.4.1, Safe v1.5.0, and one invariant test.
 - Invariant run: 128 runs, depth 128, 16,384 calls, 0 reverts, on one mandate with no epoch change.
 - Properties checked: capability-tree budget conservation; measured USDC outflow equals recorded consumption; one fixture where a recipient is inside a child scope but outside the root scope, and is never paid. That fixture is not a general proof about every out-of-scope recipient.
 - Safe tests show that `enableModule`, `addOwnerWithThreshold`, and `setGuard` each block execution and make `trip` succeed. v1.5.0 also covers `setModuleGuard`. Principal co-sign goes through Safe ERC-1271. A raw signature of the gate hash does not.
-- Runtime size from one happy-path gas report: AgentGate 22,933 bytes; GateSettlement 12,989 bytes. See `docs/GAS.md`.
+- Runtime size after batching the account check into `accountSnapshot`: AgentGate 21,390 bytes; GateSettlement 12,232 bytes. See `docs/GAS.md`.
 
 The gate has no owner, no upgrade path, and no global switch. `GateSettlement` is reached by `DELEGATECALL` through an extension address fixed at construction. Calling the extension directly is rejected.
 
@@ -43,8 +43,8 @@ Dependencies are vendored under `lib/` (forge-std and OpenZeppelin Contracts 5.7
 
 | Path | Role |
 | --- | --- |
-| `src/AgentGate.sol` | Registry and admission. Runtime 21,204 bytes. |
-| `src/GateSettlement.sol` | Execute, veto, cancel, release, delegation upkeep. Runtime 12,186 bytes. |
+| `src/AgentGate.sol` | Registry and admission. Runtime 21,390 bytes. |
+| `src/GateSettlement.sol` | Execute, veto, cancel, release, delegation upkeep. Runtime 12,232 bytes. |
 | `src/libraries/GateChecks.sol` | Stateless leaf, delegation, and shrink checks. Runtime 4,767 bytes. |
 | `src/verifiers/EcdsaAttestationVerifier.sol` | ECDSA / ERC-1271 attestations. |
 | `SPEC.md` | Merged specification. |
@@ -68,6 +68,7 @@ The protocol backbone is attributed to @川, 2026-09-25. See SPEC.md §0.
 - Allowlists are extra leaves, not an `IN_SET` parameter rule. The scope tree is the set.
 - Tests read time with `vm.getBlockTimestamp()`. Under `via_ir`, `block.timestamp` in the same call frame can stay stale after `vm.warp`.
 - `mandateId` is first come, first served. Anyone can register an id. That only affects that id; the principal picks another.
+- The gate reads the account, the config digest, and other authority in one `accountSnapshot` call. `account`, `configDigest`, and `agentAuthority` remain and must match the snapshot.
 
 ## 中文
 

@@ -53,16 +53,21 @@ contract MockAccount is IAccountAdapter {
         return _call(target, value, data);
     }
 
-    function configDigest() external view returns (bytes32) {
+    function configDigest() public view returns (bytes32) {
         return keccak256(abi.encode(gate, owner, extraModule));
     }
 
-    function agentAuthority(address agent) external view returns (bool) {
+    function agentAuthority(address agent) public view returns (bool) {
         return otherAuthority[agent];
     }
 
-    function account() external view returns (address) {
+    function account() public view returns (address) {
         return address(this);
+    }
+
+    /// @dev Same three facts, one call. Composes the functions above so they cannot drift.
+    function accountSnapshot(address agent) external view returns (address, bytes32, bool) {
+        return (account(), configDigest(), agentAuthority(agent));
     }
 
     function isValidSignature(bytes32 hash, bytes calldata sig) external view returns (bytes4) {
